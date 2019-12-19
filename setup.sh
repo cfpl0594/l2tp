@@ -78,8 +78,8 @@ conn L2TP-PSK-noNAT
     leftprotoport=17/1701
     right=%any
     rightprotoport=17/%any
-    rightsubnetwithin=0.0.0.0/0
-    forceencaps=yes  #此项必须开启，否则NAT设备无法上网
+    #rightsubnetwithin=0.0.0.0/0
+    #forceencaps=yes  #此项必须开启，否则NAT设备无法上网
 EOF
 
 #9.设置用户名密码
