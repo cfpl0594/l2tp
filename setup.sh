@@ -11,15 +11,14 @@ yum install -y xl2tpd libreswan lsof
 mv /etc/xl2tpd/xl2tpd.conf /etc/xl2tpd/xl2tpd.conf_bak
 cat >/etc/xl2tpd/xl2tpd.conf<<EOF
 [global]
-listen-addr = $public_ip 
-
+ipsec saref = yes
+listen-addr = $public_ip
 [lns default]
-ip range = 192.168.100.128-192.168.100.254
-local ip = 192.168.9.87
-require chap = yes
+ip range = 192.168.18.2-192.168.18.100
+local ip = 192.168.18.1
+refuse chap = yes
 refuse pap = yes
 require authentication = yes
-name = LinuxVPNserver
 ppp debug = yes
 pppoptfile = /etc/ppp/options.xl2tpd
 length bit = yes
@@ -28,29 +27,19 @@ EOF
 #6.编辑pppoptfile文件
 mv /etc/ppp/options.xl2tpd /etc/ppp/options.xl2tpd_bak
 cat >/etc/ppp/options.xl2tpd<<EOF
-pcp-accept-local
-ipcp-accept-remote
-ms-dns  114.114.114.114
-ms-dns  223.5.5.5
-# ms-wins 192.168.1.2
-# ms-wins 192.168.1.4
-name xl2tpd
-#noccp
-auth
-#crtscts
-idle 1800
-mtu 1410
-mru 1410
-nodefaultroute
-debug
-#lock
-proxyarp
-connect-delay 5000
-refuse-pap
-refuse-mschap
 require-mschap-v2
-persist
-logfile /var/log/xl2tpd.log
+ms-dns 8.8.8.8
+ms-dns 8.8.4.4
+asyncmap 0
+auth
+crtscts
+lock
+hide-password
+modem
+debug
+name l2tpd
+proxyarp
+lcp-echo-interval 30
 EOF
 
 #7-8.编辑ipsec配置文件
@@ -113,31 +102,17 @@ firewall-cmd --reload      # 重载配置
 #12.修改内核参数
 cat >>/etc/sysctl.conf<<EOF
 net.ipv4.ip_forward = 1
-net.ipv4.conf.all.accept_redirects = 0
-net.ipv4.conf.all.rp_filter = 0
-net.ipv4.conf.all.send_redirects = 0
-net.ipv4.conf.default.accept_redirects = 0
 net.ipv4.conf.default.rp_filter = 0
+net.ipv4.conf.default.accept_source_route = 0
+net.ipv4.conf.all.send_redirects = 0
 net.ipv4.conf.default.send_redirects = 0
-net.ipv4.conf.eth0.accept_redirects = 0
-net.ipv4.conf.eth0.rp_filter = 0
-net.ipv4.conf.eth0.send_redirects = 0
-net.ipv4.conf.eth1.accept_redirects = 0
-net.ipv4.conf.eth1.rp_filter = 0
-net.ipv4.conf.eth1.send_redirects = 0
-net.ipv4.conf.eth2.accept_redirects = 0
-net.ipv4.conf.eth2.rp_filter = 0
-net.ipv4.conf.eth2.send_redirects = 0
-net.ipv4.conf.ip_vti0.accept_redirects = 0
-net.ipv4.conf.ip_vti0.rp_filter = 0
-net.ipv4.conf.ip_vti0.send_redirects = 0
-net.ipv4.conf.lo.accept_redirects = 0
-net.ipv4.conf.lo.rp_filter = 0
-net.ipv4.conf.lo.send_redirects = 0
+net.ipv4.conf.all.log_martians = 0
+net.ipv4.conf.default.log_martians = 0
+net.ipv4.conf.all.accept_redirects = 0
+net.ipv4.conf.default.accept_redirects = 0
+net.ipv4.icmp_ignore_bogus_error_responses = 1
 EOF
-
 sysctl -p
-
 #systemctl enable ipsec     # 设为开机启动
 systemctl start ipsec     # 启动服务
 #systemctl enable xl2tpd      # 设为卡机启动
