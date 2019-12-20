@@ -11,11 +11,11 @@ yum install -y xl2tpd libreswan lsof
 mv /etc/xl2tpd/xl2tpd.conf /etc/xl2tpd/xl2tpd.conf_bak
 cat >/etc/xl2tpd/xl2tpd.conf<<EOF
 [global]
-listen-addr = 45.88.40.112 
+listen-addr = $public_ip 
 
 [lns default]
-ip range = 192.168.1.128-192.168.1.254
-local ip = 192.168.1.99
+ip range = 192.168.100.128-192.168.100.254
+local ip = 192.168.9.87
 require chap = yes
 refuse pap = yes
 require authentication = yes
@@ -57,23 +57,30 @@ EOF
 mv /etc/ipsec.conf /etc/ipsec.conf_bak
 cat >/etc/ipsec.conf<<EOF
 config setup
-    nat_traversal=yes
-    virtual_private=%v4:10.0.0.0/8,%v4:192.168.0.0/16,%v4:172.16.0.0/12,%v4:!192.168.18.0/24
-    oe=off
+    #nat_traversal=yes
+    #virtual_private=%v4:10.0.0.0/8,%v4:192.168.0.0/16,%v4:172.16.0.0/12,%v4:!192.168.18.0/24
+    #oe=off
     protostack=netkey
-    plutostderrlog=/var/log/ipsec.log
+    dumpdir=/var/run/pluto/
+    virtual_private=%v4:10.0.0.0/8,%v4:192.168.0.0/16,%v4:172.16.0.0/12,%v4:25.0.0.0/8,%v4:100.64.0.0/10,%v6:fd00::/8,%v6:fe80::/10
+    #plutostderrlog=/var/log/ipsec.log
 conn L2TP-PSK-NAT
-    rightsubnet=vhost:%priv
+    #rightsubnet=vhost:%priv
+    rightsubnet=0.0.0.0/0
+    dpddelay=10
+    dpdtimeout=20
+    dpdaction=clear
+    forceencaps=yes
     also=L2TP-PSK-noNAT
 conn L2TP-PSK-noNAT
     authby=secret
-    type=transport
     pfs=no
     auto=add
     keyingtries=3
     rekey=no
     ikelifetime=8h
     keylife=1h
+    type=transport
     left=$public_ip
     leftprotoport=17/1701
     right=%any
@@ -131,7 +138,7 @@ EOF
 
 sysctl -p
 
-systemctl enable ipsec     # 设为开机启动
+#systemctl enable ipsec     # 设为开机启动
 systemctl start ipsec     # 启动服务
-systemctl enable xl2tpd      # 设为卡机启动
+#systemctl enable xl2tpd      # 设为卡机启动
 systemctl start xl2tpd      # 启动xl2tp
